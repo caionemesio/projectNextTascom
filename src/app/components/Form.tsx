@@ -14,7 +14,9 @@ import { validNickName } from '../api/validNickName'
 
 const userSchema= z.object({
     nickname: z.string().min(3, "Enter a valid name!"),
-    tagline:z.string().min(1,"Enter a valid tagname"),
+    tagline:z.string().min(1,"Enter a valid tagname").transform(tagline=>{
+        return tagline.replace(/#/g,'')
+    }),
     phoneNumber: z.string().min(4, "This field is required"),
     champion: z.string().min(1, "Select a champion"),  
     
@@ -27,7 +29,7 @@ type formProps={
 export default  function Form( {username,email}:formProps){
     const {data, isLoading, isError}=useQuery(["champions"],getChampions)
     const [phone, setPhone] = useState<string>("")
-    const [notFoundPlayer,setNotFoundPlayer]=useState<boolean>(false)
+    const [ErrorPlayer,setErrorPlayer]=useState<string>("")
     const {register, handleSubmit, formState:{errors}}=useForm<userSchema>({
         resolver:zodResolver(userSchema)
     })
@@ -38,15 +40,14 @@ export default  function Form( {username,email}:formProps){
 
    async function handleRegisterUser(dataUser:userSchema){
         const formattedDate=format(new Date(),"dd/MM/yyyy")
-        const formattedTagline= dataUser.tagline.slice(1)
         try {
-            const validationNickname= await validNickName({summonerName:dataUser.nickname, tagline:formattedTagline})
-            if(validationNickname==='playerFound'){
-                const newUserData= {...dataUser, username,email,formattedDate,formattedTagline}
+            const validationNickname= await validNickName({summonerName:dataUser.nickname, tagline:dataUser.tagline})
+            if(validationNickname===undefined){
+                const newUserData= {...dataUser, username,email,formattedDate}
                 console.log(newUserData)
                 return newUserData
-            }else if(validationNickname==='playerNotFound'){
-                setNotFoundPlayer(true)
+            }else {
+                setErrorPlayer(validationNickname)
                 return
             }
         } catch (error) {
@@ -71,10 +72,10 @@ export default  function Form( {username,email}:formProps){
             <form onSubmit={handleSubmit(handleRegisterUser)}>
             <Stack spacing={2} width={350} color={"GrayText"}>
             <div >
-                <TextField label="Nickname" className='w-2/3' onFocus={()=>setNotFoundPlayer(false)} type='text'  {...register('nickname')} />
-                <TextField label="tagline"className='w-1/3' defaultValue="#" type='text' {...register('tagline')}/>
+                <TextField label="Nickname" className='w-2/3' onFocus={()=>setErrorPlayer("")} type='text'  {...register('nickname')} />
+                <TextField label="tagline"className='w-1/3'onFocus={()=>setErrorPlayer("")} defaultValue="#" type='text' {...register('tagline')}/>
                  {errors.nickname && (<p className='text-red-700'>{errors.nickname.message}</p>)}   
-                {notFoundPlayer &&(<p className='text-red-700'>Player not found!</p>)}
+                {ErrorPlayer &&(<p className='text-red-700'>{ErrorPlayer}</p>)}
             </div>  
            
             <div>
@@ -101,7 +102,7 @@ export default  function Form( {username,email}:formProps){
              />}
             {errors.champion && (<p className='text-red-700'>{errors.champion.message}</p>)} 
              </div>
-            <Button type='submit' variant='contained'>Enviar</Button>
+            <Button type='submit' variant='contained'>Submit</Button>
             <Button onClick={()=>signOut()}  variant='text' color='error'  size='small'>Log Out</Button>
             </Stack>     
             </form>

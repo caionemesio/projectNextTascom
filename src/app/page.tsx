@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <>
     <div className="flex justify-center items-center h-screen">
-    <Button onClick={()=>signIn("github",{callbackUrl:'/formScreen'})} variant="contained">Abrir com github</Button>
+    <Button  onClick={()=>signIn("github",{callbackUrl:'/formScreen'})} variant="contained">Abrir com github</Button>
     </div>
     </>
   );
